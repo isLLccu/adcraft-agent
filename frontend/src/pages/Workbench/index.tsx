@@ -66,6 +66,7 @@ export default function Workbench() {
   const uploadRef = useRef<HTMLInputElement>(null)
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const busyRef = useRef(false)
+  const sessionRequestIdRef = useRef(requestId())
   const runRequestRef = useRef<{ signature: string; key: string } | null>(null)
   const imageRequestRef = useRef<{ signature: string; key: string } | null>(null)
   const product = products.find(item => item.id === productId)
@@ -90,7 +91,7 @@ export default function Workbench() {
         if (saved && saved.productId === firstId) {
           try { previousRuns = await ai.runs(saved.id, controller.signal); nextSession = saved } catch (reason) { if (isAbort(reason)) throw reason }
         }
-        if (!nextSession) nextSession = await ai.session(controller.signal)
+        if (!nextSession) nextSession = await ai.session(controller.signal, sessionRequestIdRef.current)
         if (controller.signal.aborted) return
         setConfig(nextConfig); setProducts(nextProducts); setReport(nextReport); setProductId(firstId)
         setSessionId(nextSession.id); setRuns(previousRuns); setFocusedId(previousRuns.at(-1)?.id || '')

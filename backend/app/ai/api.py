@@ -58,6 +58,10 @@ class RunInput(StrictInput):
     request_id: str = Field(min_length=1, max_length=100)
 
 
+class SessionInput(StrictInput):
+    request_id: str | None = Field(None, min_length=1, max_length=100)
+
+
 class FeedbackInput(StrictInput):
     rating: int = Field(ge=1, le=5)
     comment: str = Field("", max_length=1000)
@@ -176,8 +180,17 @@ def create_app(settings: AISettings | None = None) -> FastAPI:
         repo.delete("documents",document_id)
 
     @app.post(f"{PREFIX}/sessions",status_code=201)
-    async def create_session():
-        return repo.put("sessions",{"id":new_id("s"),"created_at":now()})
+    async def create_session(body: SessionInput | None = None):
+        # React StrictMode 会双调用初始化 effect；可选的 request_id 让会话创建也幂等，
+        # 重复提交返回同一会话而不是两条空记录。
+        value = {"id": new_id("s"), "created_at": now()}
+        if body is None or not body.request_id:
+            return repo.put("sessions", value)
+        try:
+            session, _fresh = repo.create_idempotent("sessions", value, "session", body.request_id, fingerprint({}))
+        except IdempotencyConflict as exc:
+            raise HTTPException(409, str(exc)) from None
+        return session
 
     @app.get(f"{PREFIX}/sessions/{{session_id}}/runs")
     async def session_runs(session_id: str):

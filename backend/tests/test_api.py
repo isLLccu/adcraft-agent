@@ -95,6 +95,23 @@ def test_same_request_reuses_run_and_different_content_conflicts(client):
     assert len(client.get(f"{PREFIX}/sessions/{sid}/runs").json()) == 1
 
 
+def test_session_creation_is_idempotent_with_request_id(client):
+    # React StrictMode 会双调用初始化 effect；同一 request_id 只应产生一条会话记录。
+    first = client.post(f"{PREFIX}/sessions", json={"request_id": "init-1"})
+    duplicate = client.post(f"{PREFIX}/sessions", json={"request_id": "init-1"})
+    assert first.status_code == duplicate.status_code == 201
+    assert first.json()["id"] == duplicate.json()["id"]
+    # 会话存在且可用：能查询到空的历史列表。
+    assert client.get(f"{PREFIX}/sessions/{first.json()['id']}/runs").status_code == 200
+
+
+def test_session_creation_without_request_id_still_works(client):
+    response = client.post(f"{PREFIX}/sessions")
+    assert response.status_code == 201
+    response = client.post(f"{PREFIX}/sessions", json={})
+    assert response.status_code == 201
+
+
 def test_completed_sse_replays_trace_and_honors_last_event_id(client):
     completed = run(client)
     response = client.get(f"{PREFIX}/runs/{completed['id']}/events")

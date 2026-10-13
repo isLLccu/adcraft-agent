@@ -28,7 +28,8 @@ export const ai = {
   documents: (brandId: string, signal?: AbortSignal) => request<KnowledgeDocument[]>(`/documents?brand_id=${encodeURIComponent(brandId)}`, { signal }),
   createDocument: (body: Omit<KnowledgeDocument, 'id'>) => request<KnowledgeDocument>('/documents', { method: 'POST', body: JSON.stringify(body) }),
   deleteDocument: (id: string) => request<void>(`/documents/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-  session: (signal?: AbortSignal) => request<{ id: string; created_at: string }>('/sessions', { method: 'POST', signal }),
+  // requestId 可选：StrictMode 双执行时携带同一 request_id，由服务端幂等去重。
+  session: (signal?: AbortSignal, requestId?: string) => request<{ id: string; created_at: string }>('/sessions', { method: 'POST', signal, ...(requestId ? { body: JSON.stringify({ request_id: requestId }) } : {}) }),
   runs: (id: string, signal?: AbortSignal) => request<Run[]>(`/sessions/${encodeURIComponent(id)}/runs`, { signal }),
   createRun: (body: { session_id: string; product_id: string; message: string; platform: Platform; request_id: string }) => request<Run>('/runs', { method: 'POST', body: JSON.stringify(body) }),
   run: (id: string, signal?: AbortSignal) => request<Run>(`/runs/${encodeURIComponent(id)}`, { signal }),
