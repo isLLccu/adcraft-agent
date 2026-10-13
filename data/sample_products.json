@@ -1,0 +1,5 @@
+[
+  {"id":"p-cup","name":"北岸随行杯","category":"生活用品","description":"用于日常通勤的随行杯。旋拧杯盖，便于随身携带。未提供保温时长测试。","brand_id":"northcup","facts":[{"id":"f-capacity","label":"容量","value":"400mL"},{"id":"f-material","label":"材质","value":"304不锈钢"},{"id":"f-weight","label":"重量","value":"260g"},{"id":"f-price","label":"售价","value":"99元"}],"selling_points":["轻便随行","旋拧杯盖"],"image_url":null},
+  {"id":"p-bag","name":"山径轻旅背包","category":"户外用品","description":"通勤与短途出行背包，包含独立收纳分区。未提供防水等级或承重测试。","brand_id":"trail","facts":[{"id":"b-volume","label":"容量","value":"18L"},{"id":"b-weight","label":"重量","value":"580g"},{"id":"b-material","label":"材质","value":"聚酯纤维"},{"id":"b-price","label":"售价","value":"159元"}],"selling_points":["独立收纳分区","通勤与短途出行"],"image_url":null},
+  {"id":"p-lamp","name":"微光桌面灯","category":"家居用品","description":"桌面使用灯具，支持触控调光。未提供护眼或医疗功效证明。","brand_id":"lumen","facts":[{"id":"l-power","label":"额定功率","value":"5W"},{"id":"l-color","label":"颜色","value":"暖白色"},{"id":"l-input","label":"输入接口","value":"USB-C"},{"id":"l-price","label":"售价","value":"89元"}],"selling_points":["触控调光","桌面使用"],"image_url":null}
+]
