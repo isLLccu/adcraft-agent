@@ -52,7 +52,7 @@ LLM_API_KEY=你的密钥
 LLM_MODEL=你的可用模型名
 ```
 
-接口使用 OpenAI-compatible `/chat/completions`，模型需支持 `tools` 和 JSON 输出。API base 应为基础路径，例如 `/v1`，不能再次包含 `/chat/completions`。不同服务的模型名、地域、兼容字段和额度需要按该服务确认。本次交付没有执行真实付费模型或图片联调，已有 MockTransport 与工具流程边界测试。
+接口使用 OpenAI-compatible `/chat/completions`，模型需支持 `tools` 和 JSON 输出。API base 应为基础路径，例如 `/v1`，不能再次包含 `/chat/completions`。不同服务的模型名、地域、兼容字段和额度需要按该服务确认。文本链路已用 deepseek-chat 做过小样本联调（生成/修改/澄清各一次 + 付费评测 2 例，记录见 docs/VERIFICATION.md）；图片与 embedding 未付费联调，保留 MockTransport 与工具流程边界测试。
 
 语义向量检索是可选项。配置 `EMBEDDING_API_BASE`、`EMBEDDING_API_KEY`、`EMBEDDING_MODEL` 后启用真实 Embedding + BM25 的 RRF 融合；默认仅使用 BM25。Embedding 服务需支持 `/embeddings`，不会隐式复用其他供应商密钥，也不会将字符哈希伪装成语义模型。
 

@@ -273,7 +273,7 @@ scripts/ci.sh 与 GitHub Actions 跑：ruff、pytest（禁止外呼的 133 个�
 ## 面试前自查
 
 - 能离线演示一次完整流程，并明确 demo。
-- 有一次真实 live 调用记录或明确说明尚未实测。
+- 有真实 live 调用记录（data/runtime/live_test_records.md 与 data/live_report.json）并能解释口径。
 - 能打开 `AIWorkflow.run`、`Retriever.search`、`validate_draft` 解释数据流。
 - 能从 `data/runtime/logs` 读出一条 run 日志并解释每个白名单字段。
 - 能用一个排障剧本讲清定位路径（见 docs/TROUBLESHOOTING.md）。

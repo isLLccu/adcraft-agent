@@ -1,5 +1,14 @@
 # AdCraft AI v2 修改记录
 
+## v2.1：工程化基础与面试对齐（2026-10）
+
+- 建立 git 分阶段历史与本地门禁（scripts/ci.sh、scripts/ci.ps1、GitHub Actions）：ruff + 133 个离线测试（覆盖率 90%）+ 前端 lint/build。
+- 新增结构化 JSON 行日志（data/runtime/logs，12 个字段白名单，不含 prompt/响应/URL/密钥）与 /health 深度探测（SQLite 可读写，不拨测上游）。
+- 修复：会话锁无限增长（弱引用回收）、provider 重试无抖动、repository.list 无分页、替换商品图不删旧文件、React StrictMode 会话双创建。
+- 删除 v1 遗留后端与夹具约 3800 行（git 历史保留），前端依赖精简至 react/react-dom。
+- 文档对齐 JavaGuide 面试方法：STAR 版介绍模板与量化矩阵、数据流与信任边界图、第六层设计讨论 8 题、四个排障剧本。
+- 真实模型联调：deepseek-chat 生成/修改/澄清 3 次 + 付费评测 2/2（记录见 docs/VERIFICATION.md）；embedding 与图片未付费联调。
+
 ## 产品与代码
 
 从表单式批量生图平台调整为对话式电商内容工作台。新的 AI 核心位于 backend/app/ai，可以脱离网页和基础设施独立运行。增加模型工具循环、严格输出schema、商品声明与资料引用、BM25和可选API向量混合检索、有限校验修复、多轮草稿、行动trace、离线评测。
