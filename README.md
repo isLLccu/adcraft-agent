@@ -1,5 +1,8 @@
 # AdCraft AI 对话式电商内容工作台
 
+[![CI](https://github.com/isLLccu/adcraft-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/isLLccu/adcraft-agent/actions/workflows/ci.yml)
+仓库地址：https://github.com/isLLccu/adcraft-agent
+
 AdCraft AI 将商品事实、品牌资料检索、模型工具调用、结构化文案和程序校验串成一条可观察的 AI 应用链路。你可以生成文案、追问依据、修改上一版，并在确认后生成广告背景或合成商品原图。
 
 本版用于本地单工作区演示和学习。核心模块可以脱离网页、数据库和任务队列运行，方便逐个阅读、调试与验证。Python 建议 3.11 或 3.12。

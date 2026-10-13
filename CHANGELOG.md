@@ -8,6 +8,7 @@
 - 删除 v1 遗留后端与夹具约 3800 行（git 历史保留），前端依赖精简至 react/react-dom。
 - 文档对齐 JavaGuide 面试方法：STAR 版介绍模板与量化矩阵、数据流与信任边界图、第六层设计讨论 8 题、四个排障剧本。
 - 真实模型联调：deepseek-chat 生成/修改/澄清 3 次 + 付费评测 2/2（记录见 docs/VERIFICATION.md）；embedding 与图片未付费联调。
+- 发布：公开仓库 https://github.com/isLLccu/adcraft-agent（v1 平台已被本版覆盖，旧历史保留在本地 git 与 v1 基线提交）；补 MIT LICENSE、预构建网页与 CI 徽章。
 
 ## 产品与代码
 
