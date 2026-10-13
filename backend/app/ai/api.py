@@ -1,10 +1,8 @@
 """对话工作台 HTTP 适配层；业务生成逻辑在 workflow.py。"""
 import asyncio
 from contextlib import asynccontextmanager
-from dataclasses import asdict
 from io import BytesIO
 import json
-from pathlib import Path
 import time
 from typing import Literal
 

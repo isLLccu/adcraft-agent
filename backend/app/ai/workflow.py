@@ -288,7 +288,6 @@ class AIWorkflow:
     def _demo_draft(product, evidence, message, platform, recent, previous):
         facts = list(fact_map(product).values())
         constraints = [str(h.get("message", "")) for h in recent] + [message]
-        all_requests = "\n".join(constraints)
         # Demo supports a small, documented set of commands. Live semantics are
         # provided by the model; both modes share citation and grounding checks.
         banned_labels = set()
