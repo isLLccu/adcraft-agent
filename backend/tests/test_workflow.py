@@ -64,8 +64,17 @@ class Retriever:
         return result
 
 
+class FakeLogger:
+    def __init__(self):
+        self.entries = []
+
+    def write(self, fields):
+        self.entries.append(fields)
+
+
 class WorkflowTests(unittest.IsolatedAsyncioTestCase):
-    async def run_flow(self, mode="demo", message="生成文案", history=None, client=None, max_steps=6, repairs=1, retriever=None):
+    async def run_flow(self, mode="demo", message="生成文案", history=None, client=None, max_steps=6, repairs=1,
+                       retriever=None, run_id=None, logger=None):
         events = []
 
         async def emit(type_, stage, message, data):
@@ -73,8 +82,37 @@ class WorkflowTests(unittest.IsolatedAsyncioTestCase):
         client = client or Client()
         retriever = retriever or Retriever()
         settings = SimpleNamespace(mode=mode, max_agent_steps=max_steps, max_repair_attempts=repairs)
-        result = await AIWorkflow(settings, client, retriever).run(PRODUCT, DOCUMENTS, message, "xiaohongshu", history or [], emit)
+        result = await AIWorkflow(settings, client, retriever).run(PRODUCT, DOCUMENTS, message, "xiaohongshu",
+                                                                   history or [], emit, run_id=run_id, logger=logger)
         return result, events, client, retriever
+
+    async def test_finish_logs_whitelisted_summary(self):
+        from app.ai.observability import RUN_FIELDS
+
+        logger = FakeLogger()
+        result, _, _, _ = await self.run_flow(run_id="run-1", logger=logger)
+        assert result["status"] == "completed"
+        assert len(logger.entries) == 1
+        entry = logger.entries[0]
+        assert entry["event"] == "run_finished"
+        assert entry["run_id"] == "run-1"
+        assert entry["mode"] == "demo"
+        assert entry["intent"] == "generate"
+        assert entry["status"] == "completed"
+        assert entry["input_tokens"] == 0 and entry["output_tokens"] == 0
+        assert entry["latency_ms"] >= 0
+        assert set(entry) <= RUN_FIELDS
+
+    async def test_failed_run_logs_error_code(self):
+        class Broken(Retriever):
+            async def search(self, documents, query, brand_id, top_k=None):
+                raise RuntimeError("boom")
+
+        logger = FakeLogger()
+        result, _, _, _ = await self.run_flow(run_id="run-2", logger=logger, retriever=Broken())
+        assert result["status"] == "failed"
+        assert len(logger.entries) == 1
+        assert logger.entries[0]["error_code"] == "internal_error"
 
     def live_script(self, draft=None):
         return [

@@ -43,9 +43,10 @@ class AIWorkflow:
         self.client = client
         self.retriever = retriever
 
-    async def run(self, product, documents, message, platform, history, emit):
+    async def run(self, product, documents, message, platform, history, emit, run_id=None, logger=None):
         started = time.monotonic()
         usage = {"input_tokens": 0, "output_tokens": 0, "total_calls": 0, "latency_ms": 0}
+        error_code = None
         if not isinstance(product, dict) or not product.get("id") or not product.get("brand_id"):
             return {"status": "failed", "answer": "商品缺少必要标识或品牌信息。", "draft": None,
                     "evidence": [], "validation": {"passed": False, "issues": []}, "usage": usage}
@@ -61,6 +62,14 @@ class AIWorkflow:
 
         def finish(status, answer, draft=None, validation=None):
             usage["latency_ms"] = round((time.monotonic() - started) * 1000)
+            # 结构化日志只经过白名单字段（observability.RunLogger），
+            # 不携带 prompt、响应正文、URL 或密钥。
+            if run_id and logger:
+                logger.write({"event": "run_finished", "run_id": run_id, "mode": mode,
+                              "intent": intent, "status": status,
+                              "input_tokens": usage["input_tokens"],
+                              "output_tokens": usage["output_tokens"],
+                              "latency_ms": usage["latency_ms"], "error_code": error_code})
             return {"status": status, "answer": answer, "draft": draft, "evidence": evidence,
                     "validation": validation or {"passed": status == "completed", "issues": []}, "usage": usage}
 
@@ -241,6 +250,7 @@ class AIWorkflow:
             return finish("completed", "已根据商品事实和品牌资料" + ("修改" if intent == "revise" else "生成") + "草稿。请确认表达和素材方案。" + ("当前为确定性演示模式。" if mode == "demo" else ""), draft, validation)
         except Exception as exc:
             # Never emit raw exceptions, provider bodies, URLs or secret headers.
+            error_code = exc.code if isinstance(exc, ModelError) else "internal_error"
             error_data = {"error_type": type(exc).__name__}
             public_message = "当前任务执行失败。请检查模型服务配置或稍后重试。"
             if isinstance(exc, ModelError):

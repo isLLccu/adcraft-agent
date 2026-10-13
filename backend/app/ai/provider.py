@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import math
+import random
 import time
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
@@ -175,6 +176,8 @@ class ModelClient:
                 if not error.retryable or attempt > self._max_retries:
                     raise error from None
                 delay = min(self._retry_delay * 2 ** (attempt - 1), 2.0)
+                # 退避上叠加 ±50% 抖动，避免并发重试在同一时刻同时到达上游。
+                delay = min(delay * random.uniform(0.5, 1.5), 2.0)
                 if response is not None:
                     try:
                         retry_after = float(response.headers.get("Retry-After", "0"))

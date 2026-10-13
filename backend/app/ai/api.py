@@ -3,18 +3,21 @@ import asyncio
 from contextlib import asynccontextmanager
 from io import BytesIO
 import json
+from pathlib import Path
 import time
 from typing import Literal
 
 from fastapi import BackgroundTasks, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .config import AISettings, PROJECT_ROOT
 from .images import ImageRenderer, ImageError
+from .locks import KeyedLocks
+from .observability import RunLogger
 from .provider import ModelClient, ModelError
 from .repository import Repository, IdempotencyConflict, fingerprint, new_id, now
 from .retrieval import Retriever
@@ -98,7 +101,8 @@ def create_app(settings: AISettings | None = None) -> FastAPI:
     retriever = Retriever(settings, client)
     workflow = AIWorkflow(settings, client, retriever)
     renderer = ImageRenderer(settings)
-    session_locks: dict[str, asyncio.Lock] = {}
+    session_locks = KeyedLocks()
+    logger = RunLogger(settings.data_dir / "logs")
     concurrency = asyncio.Semaphore(settings.max_concurrent_runs)
     image_concurrency = asyncio.Semaphore(2)
 
@@ -124,7 +128,27 @@ def create_app(settings: AISettings | None = None) -> FastAPI:
 
     @app.get("/health")
     async def health():
-        return {"status":"healthy", "version":"2.0.0"}
+        # 深度探测：确认本地 SQLite 可读写。刻意不做上游模型拨测——
+        # 那会消耗额度、触发限流，并让健康检查依赖外部服务；
+        # health 只回答“本进程能否继续服务”。
+        checks = {"api": "ok"}
+        try:
+            probe = {"id": "health_probe", "at": now()}
+            repo.put("meta", probe)
+            checks["storage"] = "ok" if repo.get("meta", "health_probe") == probe else "stale"
+            repo.delete("meta", "health_probe")
+        except Exception:
+            checks["storage"] = "unavailable"
+        healthy = checks["storage"] == "ok"
+        return JSONResponse(status_code=200 if healthy else 503, content={
+            "status": "healthy" if healthy else "degraded",
+            "version": "2.0.0",
+            "checks": checks,
+            "config": {"mode": settings.mode,
+                       "embedding": "hybrid" if settings.embedding_enabled else "lexical",
+                       "image_provider": settings.image_provider,
+                       "model": settings.llm_model if settings.mode == "live" else "deterministic-demo"},
+        })
 
     @app.get(f"{PREFIX}/config")
     async def config():
@@ -164,7 +188,23 @@ def create_app(settings: AISettings | None = None) -> FastAPI:
             image.convert("RGBA").save(assets/filename,"PNG")
         except (UnidentifiedImageError,OSError,Image.DecompressionBombError):
             raise HTTPException(422,"无法读取图片") from None
-        return repo.mutate("products",product_id,lambda item:item.update(image_url=f"{PREFIX}/assets/{filename}"))
+        previous_url = None
+
+        def update(item):
+            nonlocal previous_url
+            previous_url = item.get("image_url")
+            item["image_url"] = f"{PREFIX}/assets/{filename}"
+
+        updated = repo.mutate("products", product_id, update)
+        # 替换成功后删除旧文件，避免 assets 目录随重复上传无限增长。
+        if previous_url:
+            old_path = assets / Path(previous_url).name
+            if old_path.name != filename and old_path.is_file():
+                try:
+                    old_path.unlink()
+                except OSError:
+                    pass  # 删除失败不影响本次上传结果；旧文件残留可人工清理。
+        return updated
 
     @app.get(f"{PREFIX}/documents")
     async def documents(brand_id: str | None = None):
@@ -199,7 +239,7 @@ def create_app(settings: AISettings | None = None) -> FastAPI:
 
     async def execute_run(run_id: str):
         run = required("runs",run_id)
-        lock = session_locks.setdefault(run["session_id"],asyncio.Lock())
+        lock = session_locks.get(run["session_id"])
         async with lock, concurrency:
             begin = time.perf_counter()
             repo.mutate("runs",run_id,lambda item:item.update(status="running"))
@@ -213,11 +253,15 @@ def create_app(settings: AISettings | None = None) -> FastAPI:
                            r["product_id"]==run["product_id"] and r["id"]!=run_id and
                            r["status"] in {"completed","needs_clarification"}][-6:]
                 result = await asyncio.wait_for(app.state.workflow.run(product=product,documents=repo.list("documents"),
-                    message=run["message"],platform=run["platform"],history=history,emit=emit),timeout=360)
+                    message=run["message"],platform=run["platform"],history=history,emit=emit,
+                    run_id=run_id,logger=logger),timeout=360)
                 repo.mutate("runs",run_id,lambda item:item.update(**result))
             except asyncio.TimeoutError:
                 await emit("error","timeout","本次执行超过总时间预算。")
                 repo.mutate("runs",run_id,lambda item:item.update(status="failed",error="执行超时，请查看步骤记录后重试。"))
+                logger.write({"event":"run_timeout","run_id":run_id,"session_id":run["session_id"],
+                              "request_id":run.get("request_id"),"mode":settings.mode,
+                              "status":"failed","error_code":"timeout"})
             except Exception as exc:
                 message = str(exc) if isinstance(exc,ModelError) else "执行失败，请检查配置和运行日志。"
                 await emit("error","failed",message,{"error_type":type(exc).__name__})
@@ -228,7 +272,8 @@ def create_app(settings: AISettings | None = None) -> FastAPI:
         required("sessions",body.session_id)
         required("products",body.product_id)
         created = now()
-        value = {"id":new_id("run"),**body.model_dump(exclude={"request_id"}),"status":"queued","mode":settings.mode,
+        value = {"id":new_id("run"),"request_id":body.request_id,
+                 **body.model_dump(exclude={"request_id"}),"status":"queued","mode":settings.mode,
                  "answer":"","draft":None,"evidence":[],"trace":[],"validation":{"passed":False,"issues":[]},
                  "usage":{"input_tokens":0,"output_tokens":0,"total_calls":0,"latency_ms":0},"error":None,
                  "created_at":created,"updated_at":created}

@@ -1,4 +1,5 @@
 """User-facing integration risks, with isolated data and no model network calls."""
+import json
 from io import BytesIO
 
 from fastapi.testclient import TestClient
@@ -291,3 +292,55 @@ def test_app_restart_marks_interrupted_work_failed_without_losing_records(tmp_pa
     assert image_job["status"] == "failed"
     assert image_job["images"] == [{"index": 0, "url": "kept.png"}]
     assert image_job["provider_tasks"] == [{"index": 1, "task_id": "vendor-accepted"}]
+
+
+def test_health_probe_verifies_storage_without_calling_upstream(client):
+    response = client.get("/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "healthy"
+    assert body["checks"] == {"api": "ok", "storage": "ok"}
+    assert body["config"]["mode"] == "demo"
+    assert body["config"]["embedding"] == "lexical"
+    assert body["config"]["image_provider"] == "demo"
+    # 健康检查不暴露任何密钥或地址。
+    assert "key" not in json.dumps(body).lower()
+
+
+def test_health_returns_503_when_storage_is_unavailable(client, monkeypatch):
+    def broken_put(*args, **kwargs):
+        raise RuntimeError("disk unavailable")
+
+    monkeypatch.setattr(client.app.state.repo, "put", broken_put)
+    response = client.get("/health")
+    assert response.status_code == 503
+    body = response.json()
+    assert body["status"] == "degraded"
+    assert body["checks"]["storage"] == "unavailable"
+
+
+def test_replacing_product_image_removes_old_file(client):
+    first, second = BytesIO(), BytesIO()
+    Image.new("RGBA", (32, 32), (10, 20, 30, 255)).save(first, "PNG")
+    Image.new("RGBA", (32, 32), (40, 50, 60, 255)).save(second, "PNG")
+    upload = client.post(f"{PREFIX}/products/p-cup/image", files={"file": ("a.png", first.getvalue(), "image/png")})
+    assert upload.status_code == 200
+    first_url = upload.json()["image_url"]
+    assert client.get(first_url).status_code == 200
+    replaced = client.post(f"{PREFIX}/products/p-cup/image", files={"file": ("b.png", second.getvalue(), "image/png")})
+    assert replaced.status_code == 200
+    second_url = replaced.json()["image_url"]
+    assert second_url != first_url
+    assert client.get(second_url).status_code == 200
+    assert client.get(first_url).status_code == 404
+    files = list((client.app.state.settings.data_dir / "assets").glob("product-*.png"))
+    assert len(files) == 1
+
+
+def test_run_record_keeps_request_id_for_log_correlation(client):
+    response = client.post(f"{PREFIX}/runs", json={
+        "session_id": session(client), "product_id": "p-cup",
+        "message": "生成商品文案", "platform": "xiaohongshu", "request_id": "correlate-me",
+    })
+    assert response.status_code == 202
+    assert response.json()["request_id"] == "correlate-me"

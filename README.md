@@ -139,7 +139,7 @@ python scripts/evaluate.py --live --confirm-paid --limit 2 --output data/live_re
 
 ## 部署与边界
 
-`docker compose up --build` 提供后端 8000 和网页 3000 两个服务，默认绑定本机；部署配置已经简化，未在本次环境实际构建 Docker 镜像。支持可选 `.env` 的 Compose 版本需 2.24 或以上。
+`docker compose up --build` 提供后端 8000 和网页 3000 两个服务，默认绑定本机；后端配置了 SQLite 可读写探测的 healthcheck 与自动重启。两个镜像均已在本地成功构建，但引擎在构建后不可用，运行态未在本次实测。支持可选 `.env` 的 Compose 版本需 2.24 或以上。
 
 本版没有生产级登录、多租户鉴权或持久任务队列。任务使用进程内 BackgroundTasks；启动时遗留 queued/running 会标记 failed，不会自动恢复模型请求。默认数据位于 `data/runtime`，不包含在交付包。SQLite 事务防止本地重复创建，不能保证外部供应商只收费一次。图片任务保留上游 ID，超时后应先核对供应商状态。
 

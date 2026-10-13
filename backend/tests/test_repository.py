@@ -42,3 +42,18 @@ def test_failure_recovery_preserves_completed_outputs_and_provider_references(tm
     assert active["images"] == [{"index": 0}]
     assert active["provider_tasks"] == [{"index": 1, "task_id": "external-id"}]
     assert repository.get("image_jobs", "partial")["status"] == "partial"
+
+
+def test_list_supports_sql_level_limit_and_offset(tmp_path):
+    repository = Repository(tmp_path)
+    for index in range(5):
+        repository.put("items", {"id": f"item-{index}"})
+    assert [item["id"] for item in repository.list("items")] == [f"item-{i}" for i in range(5)]
+    assert [item["id"] for item in repository.list("items", limit=2)] == ["item-0", "item-1"]
+    assert [item["id"] for item in repository.list("items", limit=2, offset=2)] == ["item-2", "item-3"]
+    assert [item["id"] for item in repository.list("items", offset=4)] == ["item-4"]
+    assert repository.list("items", limit=100, offset=4) == [{"id": "item-4"}]
+    with pytest.raises(ValueError):
+        repository.list("items", limit=-1)
+    with pytest.raises(ValueError):
+        repository.list("items", offset=-1)

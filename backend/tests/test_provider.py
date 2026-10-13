@@ -67,6 +67,28 @@ def test_retryable_http_failure_recovers_with_bounded_retry(status):
     assert result["attempts"] == 3
 
 
+def test_retry_backoff_applies_bounded_jitter(monkeypatch):
+    count = 0
+
+    def handler(request):
+        nonlocal count
+        count += 1
+        return httpx.Response(503, json={"error": {"message": "retry"}}) if count < 3 else httpx.Response(200, json=chat_response())
+
+    delays = []
+
+    async def fake_sleep(delay):
+        delays.append(delay)
+
+    monkeypatch.setattr("app.ai.provider.asyncio.sleep", fake_sleep)
+    result = asyncio.run(ModelClient(settings(), transport=httpx.MockTransport(handler), retry_delay=1.0).chat([{"role": "user", "content": "hi"}]))
+    assert result["attempts"] == 3
+    assert len(delays) == 2
+    # 第一次退避 1.0s，第二次指数退避 2.0s 封顶；抖动在 ±50% 内且不越过上限。
+    assert 0.5 <= delays[0] <= 1.5
+    assert 1.0 <= delays[1] <= 2.0
+
+
 @pytest.mark.parametrize("status,code", [(400, "invalid_request"), (401, "authentication"), (403, "authentication"), (404, "invalid_request")])
 def test_permanent_failure_does_not_retry_or_leak_body(status, code, caplog):
     calls = []

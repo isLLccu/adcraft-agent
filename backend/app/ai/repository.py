@@ -66,9 +66,21 @@ class Repository:
             db.execute("INSERT INTO objects(kind,id,data) VALUES(?,?,?) ON CONFLICT(kind,id) DO UPDATE SET data=excluded.data", (kind, value["id"], json.dumps(value, ensure_ascii=False)))
         return value
 
-    def list(self, kind: str) -> list[dict]:
+    def list(self, kind: str, limit: int | None = None, offset: int = 0) -> list[dict]:
+        if limit is not None and (isinstance(limit, bool) or not isinstance(limit, int) or limit < 0):
+            raise ValueError("limit 应为非负整数或 None")
+        if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+            raise ValueError("offset 应为非负整数")
+        sql = "SELECT data FROM objects WHERE kind=? ORDER BY rowid"
+        params: list = [kind]
+        if limit is not None:
+            sql += " LIMIT ? OFFSET ?"
+            params += [limit, offset]
+        elif offset:
+            sql += " LIMIT -1 OFFSET ?"
+            params.append(offset)
         with self.connection() as db:
-            return [json.loads(row[0]) for row in db.execute("SELECT data FROM objects WHERE kind=? ORDER BY rowid", (kind,))]
+            return [json.loads(row[0]) for row in db.execute(sql, params)]
 
     def delete(self, kind: str, item_id: str) -> bool:
         with self.connection() as db:
