@@ -133,7 +133,8 @@ python scripts/evaluate.py --live --confirm-paid --limit 2 --output data/live_re
 | `docs/ARCHITECTURE.md` | 真实调用链、边界、状态与设计取舍 |
 | `docs/EXERCISES.md` | 分级练习、验收条件与参考答案 |
 | `docs/INTERVIEW_QUESTIONS.md` | 项目深挖问题与参考答题思路 |
-| `RESUME_AND_PREP.md` | 3分钟和10分钟介绍、个人贡献与可核实简历表达 |
+| `docs/TROUBLESHOOTING.md` | 费用突增、限流、幻觉投诉、图片对账四个排障剧本 |
+| `RESUME_AND_PREP.md` | STAR 版 3/10 分钟介绍、量化矩阵与可核实简历表达 |
 
 不要把阅读过代码当作个人开发成果。先亲手复现、改动、验证一个模块，再用具体提交、实验记录和失败样例描述你的贡献。
 
@@ -141,7 +142,7 @@ python scripts/evaluate.py --live --confirm-paid --limit 2 --output data/live_re
 
 `docker compose up --build` 提供后端 8000 和网页 3000 两个服务，默认绑定本机；后端配置了 SQLite 可读写探测的 healthcheck 与自动重启。两个镜像均已在本地成功构建，但引擎在构建后不可用，运行态未在本次实测。支持可选 `.env` 的 Compose 版本需 2.24 或以上。
 
-本版没有生产级登录、多租户鉴权或持久任务队列。任务使用进程内 BackgroundTasks；启动时遗留 queued/running 会标记 failed，不会自动恢复模型请求。默认数据位于 `data/runtime`，不包含在交付包。SQLite 事务防止本地重复创建，不能保证外部供应商只收费一次。图片任务保留上游 ID，超时后应先核对供应商状态。
+本版没有生产级登录、多租户鉴权或持久任务队列。任务使用进程内 BackgroundTasks；启动时遗留 queued/running 会标记 failed，不会自动恢复模型请求。默认数据位于 `data/runtime`，不包含在交付包。结构化运行日志按天写入 `data/runtime/logs`，只含白名单字段，不记录 prompt、响应正文、URL 与密钥。SQLite 事务防止本地重复创建，不能保证外部供应商只收费一次。图片任务保留上游 ID，超时后应先核对供应商状态。
 
 v1 的批量内容生产流水线（Celery + PostgreSQL + Redis + MinIO）与旧管理端页面已从代码库移除，完整保留在 git 历史中（首个提交）；演进决策见 CHANGELOG。
 

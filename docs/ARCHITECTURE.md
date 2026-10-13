@@ -34,6 +34,28 @@ flowchart TD
 
 图中的事件服务是后端 SSE 能力。当前 `frontend/src/pages/Workbench/index.tsx` 使用轮询读取 Run 与图片任务，约 850ms/1000ms 刷新，失败后有界延长等待；没有 EventSource 连接。接口存在与前端传输选择是两个事实。
 
+### 数据流与信任边界
+
+```mermaid
+flowchart LR
+  U[用户请求<br/>message·platform·request_id] --> API[api.py<br/>参数校验·幂等·会话锁]
+  API -->|queued run| DB[(SQLite<br/>runs·trace·usage)]
+  API -->|商品事实| W[workflow.py]
+  KB[品牌文档] -->|分块·品牌过滤| RET[retrieval.py<br/>BM25 + 可选 RRF]
+  RET -->|证据片段| W
+  W -->|messages·tools| P[provider.py<br/>安全适配·重试·用量]
+  P -->|HTTPS| M[(模型服务)]
+  W -->|结构化草稿| V[validation.py<br/>schema + grounding]
+  V -->|issues| REP[有限 repair]
+  REP -->|重校验| V
+  V -->|通过| OUT[草稿交付]
+  W -->|trace 事件| DB
+  DB -->|进度事件| SSE[SSE 与轮询]
+  DB -->|人工确认后| IMG[图片任务<br/>独立执行]
+```
+
+信任边界体现在图的结构里：模型输出（工具参数、决策 JSON、草稿）一律视为不可信输入，先过 `schemas` 与 `validation` 再使用；工具 observation 是数据，不是新的系统指令。进程唯一的对外出口是 `provider.py` 与 `images.py`，两者都不记录响应正文、URL 与密钥；结构化日志走字段白名单（`observability.py`），敏感字段即使误传也会被丢弃。
+
 ## 3. 稳定接口与模块责任
 
 | 文件 / 入口 | 责任 | 不应该承担的责任 |
