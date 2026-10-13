@@ -1,20 +1,28 @@
-# 本地一键门禁（Windows PowerShell 版），与 scripts/ci.sh 检查项一致。
-# 用法：powershell -ExecutionPolicy Bypass -File scripts\ci.ps1
+# Local one-shot gate (Windows PowerShell version), same checks as scripts/ci.sh.
+# Usage: powershell -ExecutionPolicy Bypass -File scripts\ci.ps1
+# ASCII-only source: PowerShell 5.1 reads UTF-8 files without BOM as ANSI.
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
+# Prefer the project venv; fall back to PATH python (used in CI images).
+$Python = if (Test-Path '.venv\Scripts\python.exe') { '.venv\Scripts\python.exe' } else { 'python' }
 
 Write-Host '== 1/4 ruff =='
-python -m ruff check backend/app/ai
+& $Python -m ruff check backend/app/ai
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host '== 2/4 pytest（含覆盖率）=='
-python -m pytest -q
+Write-Host '== 2/4 pytest (with coverage) =='
+& $Python -m pytest -q
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host '== 3/4 前端 lint =='
+Write-Host '== 3/4 frontend lint =='
 npm --prefix frontend ci
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 npm --prefix frontend run lint
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host '== 4/4 前端构建 =='
+Write-Host '== 4/4 frontend build =='
 npm --prefix frontend run build
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host 'CI 全绿。'
+Write-Host 'CI gate passed.'
