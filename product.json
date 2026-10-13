@@ -1,0 +1,10 @@
+{
+  "shop_id": 3,
+  "name": "无线蓝牙耳机",
+  "category": "数码配件",
+  "price": 299.00,
+  "description": "高品质无线蓝牙耳机，降噪效果出色",
+  "selling_points": ["主动降噪", "长续航", "音质出色", "佩戴舒适"],
+  "target_audience": "年轻白领",
+  "usage_scenario": "通勤、运动、办公"
+}
