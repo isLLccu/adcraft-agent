@@ -1,0 +1,5 @@
+# 统一换行：文本文件自动转换；脚本类固定行尾，避免跨平台执行问题
+* text=auto
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
