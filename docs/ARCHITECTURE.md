@@ -4,11 +4,11 @@
 
 这是一个单工作区、本地教学与演示用途的电商内容助手。主流程是自然语言请求、商品事实、品牌资料检索、受控工具调用、结构化草稿、校验及有限修复。基础设施服务于这条链路。
 
-`backend/app/main.py` 调用 `api.create_app`。当前持久化使用本地 SQLite，后台执行是 FastAPI `BackgroundTasks`；启动不依赖 PostgreSQL、MinIO 或 Celery。旧入口另存为 `backend/app/legacy_main.py`。
+`backend/app/main.py` 调用 `api.create_app`。当前持久化使用本地 SQLite，后台执行是 FastAPI `BackgroundTasks`；启动不依赖 PostgreSQL、MinIO 或 Celery。
 
 本版本没有把生产级多租户、分布式任务可靠性、全面事实证明或投放转化分析作为已完成能力。`brand_id` 过滤是品牌资料范围约束，不等同于登录用户之间的完整权限隔离。
 
-历史版本的数据库、Celery 和对象存储不决定 v2 的学习顺序。v2 可独立演示 AI 核心流程；旧实现留作参考。
+v1 的批量内容生产流水线（Celery + PostgreSQL + Redis + MinIO）已从代码库移除，演进决策见 CHANGELOG；完整 v1 代码保留在 git 历史中。
 
 ## 2. 执行关系
 

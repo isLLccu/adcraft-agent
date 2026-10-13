@@ -143,6 +143,6 @@ python scripts/evaluate.py --live --confirm-paid --limit 2 --output data/live_re
 
 本版没有生产级登录、多租户鉴权或持久任务队列。任务使用进程内 BackgroundTasks；启动时遗留 queued/running 会标记 failed，不会自动恢复模型请求。默认数据位于 `data/runtime`，不包含在交付包。SQLite 事务防止本地重复创建，不能保证外部供应商只收费一次。图片任务保留上游 ID，超时后应先核对供应商状态。
 
-旧版后端服务、ORM、Celery 和页面源码保留作历史参考，v2 主入口不会加载旧路由。旧依赖在 `backend/requirements-legacy.txt`，旧部署参考在 `docker-compose.legacy.yml`，并非本版启动方式。
+v1 的批量内容生产流水线（Celery + PostgreSQL + Redis + MinIO）与旧管理端页面已从代码库移除，完整保留在 git 历史中（首个提交）；演进决策见 CHANGELOG。
 
 官方接口参考：[DeepSeek 工具调用](https://api-docs.deepseek.com/zh-cn/guides/tool_calls/)、[DeepSeek JSON Output](https://api-docs.deepseek.com/zh-cn/guides/json_mode/)、[万相文生图 API](https://help.aliyun.com/zh/model-studio/text-to-image-v2-api-reference)、[FastAPI 后台任务](https://fastapi.tiangolo.com/tutorial/background-tasks/)。
