@@ -227,7 +227,7 @@ Trace 记录“执行了什么、结果怎样、花了多久”。不保存模�
 
 ## 10. 图片、评测和后续扩展
 
-图片任务由 `/runs/{id}/images` 独立发起，需要明确 `confirmed:true`。模式、`product_preserved` 和 warning 随图片结果返回。能生成漂亮背景不等于商品像素和结构完全保真，展示与面试时按提供方实际能力说明。
+图片任务由 `/runs/{id}/images` 独立发起，需要明确 `confirmed:true`。模式、`product_preserved` 和 warning 随图片结果返回。能生成漂亮背景不等于商品像素和结构完全保真，对外展示时按提供方实际能力说明。
 
 当前 `ImageRenderer.render` 用 demo 模板或真实提供方生成空背景，再通过 Pillow 缩放、合成原图。未上传原图时只返回背景，明确 warning；不透明原图会带上原背景。`product_preserved=true` 表示使用了商品原图合成，不代表未经缩放或完整视觉验证。真实图片路径支持 dashscope/OpenAI 兼容调用，交付时没有付费联调。
 

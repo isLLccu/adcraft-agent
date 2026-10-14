@@ -5,7 +5,7 @@
 
 AdCraft AI 将商品事实、品牌资料检索、模型工具调用、结构化文案和程序校验串成一条可观察的 AI 应用链路。你可以生成文案、追问依据、修改上一版，并在确认后生成广告背景或合成商品原图。
 
-本版用于本地单工作区演示和学习。核心模块可以脱离网页、数据库和任务队列运行，方便逐个阅读、调试与验证。Python 建议 3.11 或 3.12。
+本版用于本地单工作区演示。核心模块可以脱离网页、数据库和任务队列运行，方便逐个阅读、调试与验证。Python 建议 3.11 或 3.12。
 
 ## 先启动并体验
 
@@ -123,23 +123,16 @@ python scripts/evaluate.py
 python scripts/evaluate.py --live --confirm-paid --limit 2 --output data/live_report.json
 ```
 
-每条案例可能包含多次规划、生成、修复和 Embedding 调用。结果仍需人工审查；程序只覆盖明确断言。模型版本、配置、测试样例与失败结果应保留，才能形成面试中可信的证据。Chat token 汇总不含 Embedding 和图片费用。
+每条案例可能包含多次规划、生成、修复和 Embedding 调用。结果仍需人工审查；程序只覆盖明确断言。模型版本、配置、测试样例与失败结果应保留，以便事后审计与复现。Chat token 汇总不含 Embedding 和图片费用。
 
-## 学习材料
-
-先看 `START_HERE.md`，再按 `LEARNING_GUIDE.md` 的路径阅读源码。
+## 文档
 
 | 文档 | 用途 |
 |---|---|
-| `LEARNING_GUIDE.md` | 逐模块输入输出、运行、调试与学习顺序 |
-| `docs/AI_CONCEPTS.md` | 从 JSON/HTTP 到 RAG、工具调用、上下文和评测 |
-| `docs/ARCHITECTURE.md` | 真实调用链、边界、状态与设计取舍 |
-| `docs/EXERCISES.md` | 分级练习、验收条件与参考答案 |
-| `docs/INTERVIEW_QUESTIONS.md` | 项目深挖问题与参考答题思路 |
-| `docs/TROUBLESHOOTING.md` | 费用突增、限流、幻觉投诉、图片对账四个排障剧本 |
-| `RESUME_AND_PREP.md` | STAR 版 3/10 分钟介绍、量化矩阵与可核实简历表达 |
-
-不要把阅读过代码当作个人开发成果。先亲手复现、改动、验证一个模块，再用具体提交、实验记录和失败样例描述你的贡献。
+| `docs/ARCHITECTURE.md` | 调用链、边界、数据流与设计取舍 |
+| `docs/VERIFICATION.md` | 测试、离线评测与真实模型联调记录 |
+| `docs/TROUBLESHOOTING.md` | 费用突增、限流、幻觉投诉、图片对账的排障路径 |
+| `CHANGELOG.md` | 版本演进与取舍记录 |
 
 ## 部署与边界
 
