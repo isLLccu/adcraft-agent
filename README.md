@@ -9,7 +9,7 @@ AdCraft AI 将商品事实、品牌资料检索、模型工具调用、结构化
 
 ## 先启动并体验
 
-项目包含已经构建好的网页。只启动一个 Python 服务即可体验，不需要先配置 PostgreSQL、Redis、MinIO 或 Node.js。
+项目包含已经构建好的网页。
 
 ```bash
 python -m venv .venv
